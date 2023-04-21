@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { StatusBar } from "expo-status-bar";
 import {
   StyleSheet,
@@ -8,26 +8,49 @@ import {
   Switch,
   ScrollView,
 } from "react-native";
-import { useState } from "react";
 import theme from "./colors";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
+const STORAGE_KEY = "@todos";
 
 interface Todo {
   text: string;
-  work: boolean;
+  working: boolean;
 }
 
 export default function App() {
+  useEffect(() => {
+    loadTodos();
+  }, []);
   const [working, setWorking] = useState(true);
   const [text, setText] = useState("");
   const [todos, setTodos] = useState<{ [key: string]: Todo }>({});
   const toggleSwitch = () => setWorking((previousState) => !previousState);
   const onChangeText = (payload: string) => setText(payload);
-  const addTodo = () => {
+  const saveTodos = async (toSave: { [key: string]: Todo }) => {
+    try {
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
+    } catch (e) {
+      alert(`Oops! There is a problem saving data`);
+      console.error(e);
+    }
+  };
+  const loadTodos = async () => {
+    try {
+      const str = await AsyncStorage.getItem(STORAGE_KEY);
+      setTodos(JSON.parse(str as string));
+    } catch (e) {
+      alert(`Oops! There is a problem getting data`);
+      console.error(e);
+    }
+  };
+  const addTodo = async () => {
     if (text === "") {
       return;
     }
-    const newTodos = { ...todos, [Date.now()]: { text, work: working } };
+    const newTodos = { ...todos, [Date.now()]: { text, working } };
     setTodos(newTodos);
+    await saveTodos(newTodos);
     setText("");
   };
 
@@ -73,11 +96,13 @@ export default function App() {
         ></TextInput>
       </View>
       <ScrollView>
-        {Object.keys(todos).map((key) => (
-          <View key={key} style={styles.todo}>
-            <Text style={styles.todoText}>{todos[key].text}</Text>
-          </View>
-        ))}
+        {Object.keys(todos).map((key) =>
+          todos[key].working === working ? (
+            <View key={key} style={styles.todo}>
+              <Text style={styles.todoText}>{todos[key].text}</Text>
+            </View>
+          ) : null
+        )}
       </ScrollView>
     </View>
   );
