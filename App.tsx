@@ -7,6 +7,7 @@ import {
   TextInput,
   Switch,
   ScrollView,
+  ActivityIndicator,
 } from "react-native";
 import theme from "./colors";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -19,12 +20,13 @@ interface Todo {
 }
 
 export default function App() {
+  const [working, setWorking] = useState(true);
+  const [text, setText] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [todos, setTodos] = useState<{ [key: string]: Todo }>({});
   useEffect(() => {
     loadTodos();
   }, []);
-  const [working, setWorking] = useState(true);
-  const [text, setText] = useState("");
-  const [todos, setTodos] = useState<{ [key: string]: Todo }>({});
   const toggleSwitch = () => setWorking((previousState) => !previousState);
   const onChangeText = (payload: string) => setText(payload);
   const saveTodos = async (toSave: { [key: string]: Todo }) => {
@@ -39,6 +41,7 @@ export default function App() {
     try {
       const str = await AsyncStorage.getItem(STORAGE_KEY);
       setTodos(JSON.parse(str as string));
+      setLoading(false);
     } catch (e) {
       alert(`Oops! There is a problem getting data`);
       console.error(e);
@@ -95,15 +98,21 @@ export default function App() {
           value={text}
         ></TextInput>
       </View>
-      <ScrollView>
-        {Object.keys(todos).map((key) =>
-          todos[key].working === working ? (
-            <View key={key} style={styles.todo}>
-              <Text style={styles.todoText}>{todos[key].text}</Text>
-            </View>
-          ) : null
-        )}
-      </ScrollView>
+      {loading ? (
+        <View style={styles.loading}>
+          <ActivityIndicator color="white" size="large" />
+        </View>
+      ) : (
+        <ScrollView>
+          {Object.keys(todos).map((key) =>
+            todos[key].working === working ? (
+              <View key={key} style={styles.todo}>
+                <Text style={styles.todoText}>{todos[key].text}</Text>
+              </View>
+            ) : null
+          )}
+        </ScrollView>
+      )}
     </View>
   );
 }
@@ -148,5 +157,9 @@ const styles = StyleSheet.create({
   todoText: {
     color: "white",
     fontSize: 16,
+  },
+
+  loading: {
+    marginTop: 50,
   },
 });
