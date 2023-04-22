@@ -8,9 +8,12 @@ import {
   Switch,
   ScrollView,
   ActivityIndicator,
+  TouchableOpacity,
+  Alert,
 } from "react-native";
 import theme from "./colors";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 const STORAGE_KEY = "@todos";
 
@@ -55,6 +58,25 @@ export default function App() {
     setTodos(newTodos);
     await saveTodos(newTodos);
     setText("");
+  };
+
+  const deleteTodo = async (key: string) => {
+    Alert.alert(
+      "Delete To do",
+      "Are you sure? You can't recover it after delete it",
+      [
+        { text: "Cancel" },
+        {
+          text: "Sure",
+          onPress: async () => {
+            const newTodos = { ...todos };
+            delete newTodos[key];
+            setTodos(newTodos);
+            await saveTodos(newTodos);
+          },
+        },
+      ]
+    );
   };
 
   return (
@@ -108,6 +130,13 @@ export default function App() {
             todos[key].working === working ? (
               <View key={key} style={styles.todo}>
                 <Text style={styles.todoText}>{todos[key].text}</Text>
+                <TouchableOpacity onPress={() => deleteTodo(key)}>
+                  <MaterialCommunityIcons
+                    name="close-box-outline"
+                    size={24}
+                    color={theme.background}
+                  />
+                </TouchableOpacity>
               </View>
             ) : null
           )}
@@ -152,6 +181,8 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
     paddingHorizontal: 20,
     borderRadius: 10,
+    flexDirection: "row",
+    justifyContent: "space-between",
   },
 
   todoText: {
